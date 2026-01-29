@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        h3 { text-align: center; margin-bottom: 10px; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000);
+            border-radius: 10px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        /* Основная кнопка MainButton управляется через JS Телеграма */
+    </style>
+</head>
+<body>
+    <h3>Регистрация</h3>
+    <p style="font-size: 14px; color: var(--tg-theme-hint-color);">Введите данные для начисления выплат.</p>
+
+    <input type="text" id="name" placeholder="ФИО">
+    <input type="tel" id="phone" placeholder="Номер телефона">
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); // Раскрыть на весь экран
+
+        let mainButton = tg.MainButton;
+        mainButton.setText("ЗАРЕГИСТРИРОВАТЬСЯ");
+        mainButton.show();
+
+        // При нажатии на большую синюю кнопку внизу
+        Telegram.WebApp.onEvent("mainButtonClicked", function(){
+            let name = document.getElementById("name").value;
+            let phone = document.getElementById("phone").value;
+
+            if (!name || !phone) {
+                tg.showPopup({title: "Ошибка", message: "Заполните все поля!"});
+                return;
+            }
+
+            let data = {
+                name: name,
+                phone: phone
+            };
+
+            // Отправляем данные боту (как сообщение)
+            tg.sendData(JSON.stringify(data));
+        });
+    </script>
+</body>
+</html>
