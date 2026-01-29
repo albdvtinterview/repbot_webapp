@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--tg-theme-bg-color, #fff);
             color: var(--tg-theme-text-color, #000);
             display: flex;
@@ -15,77 +15,118 @@
             align-items: center;
             padding: 20px;
         }
+        h3 { margin-bottom: 5px; }
+        p { color: var(--tg-theme-hint-color, #888); font-size: 14px; margin-bottom: 20px; text-align: center; }
+
         input {
             width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 8px;
+            padding: 14px;
+            margin: 8px 0;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            border-radius: 12px;
             box-sizing: border-box;
             font-size: 16px;
+            background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000);
+            outline: none;
+            transition: border-color 0.3s;
         }
+        input:focus {
+            border-color: #2481cc;
+        }
+
         button {
             width: 100%;
-            padding: 15px;
-            background-color: #2481cc;
-            color: #fff;
+            padding: 16px;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #fff);
             border: none;
-            border-radius: 8px;
-            font-size: 18px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 20px;
-            font-weight: bold;
+            margin-top: 25px;
+            transition: opacity 0.2s;
         }
+        button:active { opacity: 0.8; }
     </style>
 </head>
 <body>
-    <h3>Анкета</h3>
-    <input type="text" id="name" placeholder="Ваше Имя">
-    <input type="tel" id="phone" placeholder="Номер телефона">
+    <h3>Регистрация</h3>
+    <p>Заполните данные для доступа к задачам</p>
 
-    <button onclick="sendData()">ЗАРЕГИСТРИРОВАТЬСЯ</button>
+    <input type="text" id="name" placeholder="ФИО (только буквы)" oninput="formatName(this)">
+    <input type="tel" id="phone" placeholder="+7 (999) 000-00-00" oninput="formatPhone(this)">
 
-    <p id="error-log" style="color: red; font-size: 12px; margin-top: 20px;"></p>
+    <button onclick="sendData()">ОТПРАВИТЬ</button>
 
     <script>
-        // Инициализация
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        function sendData() {
-            try {
-                // 1. Считываем данные
-                let name = document.getElementById("name").value.trim();
-                let phone = document.getElementById("phone").value.trim();
+        // --- МАСКА ДЛЯ ИМЕНИ ---
+        function formatName(input) {
+            // Удаляем все, что не буквы и не пробелы
+            let value = input.value.replace(/[^a-zA-Zа-яА-ЯёЁ\s]/g, '');
 
-                // 2. Проверяем
-                if (!name || !phone) {
-                    alert("⚠️ Пожалуйста, заполните оба поля!");
-                    return;
-                }
-
-                let data = {
-                    name: name,
-                    phone: phone
-                };
-
-                // 3. Показываем диагностику (УБЕРЕМ ПОТОМ)
-                // alert("Отправка данных: " + JSON.stringify(data));
-
-                // 4. Отправляем данные боту
-                tg.sendData(JSON.stringify(data));
-
-                // 5. ПРИНУДИТЕЛЬНО ЗАКРЫВАЕМ ОКНО
-                // Иногда Telegram не закрывает его сам после sendData
-                setTimeout(function() {
-                    tg.close();
-                }, 100);
-
-            } catch (error) {
-                // Если произошла ошибка, выводим её на экран
-                document.getElementById("error-log").innerText = "Ошибка: " + error.message;
-                alert("Ошибка JS: " + error.message);
+            // Делаем первую букву заглавной (опционально)
+            if (value.length > 0) {
+                value = value.charAt(0).toUpperCase() + value.slice(1);
             }
+            input.value = value;
+        }
+
+        // --- МАСКА ДЛЯ ТЕЛЕФОНА (+7) ---
+        function formatPhone(input) {
+            let value = input.value.replace(/\D/g, ''); // Оставляем только цифры
+            let formattedValue = "";
+
+            // Если первая цифра 7, 8 или 9, считаем это РФ кодом
+            if (["7", "8", "9"].indexOf(value[0]) > -1) {
+                // Если начали с 8 или 9, подменяем на 7
+                if (value[0] === "9") value = "7" + value;
+                if (value[0] === "8") value = "7" + value.slice(1);
+
+                let firstSymbols = "+7";
+                formattedValue = firstSymbols + " ";
+
+                if (value.length > 1) {
+                    formattedValue += "(" + value.substring(1, 4);
+                }
+                if (value.length >= 5) {
+                    formattedValue += ") " + value.substring(4, 7);
+                }
+                if (value.length >= 8) {
+                    formattedValue += "-" + value.substring(7, 9);
+                }
+                if (value.length >= 10) {
+                    formattedValue += "-" + value.substring(9, 11);
+                }
+            } else {
+                // Для других номеров просто + и цифры
+                formattedValue = "+" + value;
+            }
+
+            input.value = formattedValue;
+        }
+
+        // --- ОТПРАВКА ДАННЫХ ---
+        function sendData() {
+            let name = document.getElementById("name").value.trim();
+            let phone = document.getElementById("phone").value.trim();
+
+            if (name.length < 2 || phone.length < 10) {
+                tg.showPopup({title: 'Ошибка', message: 'Пожалуйста, заполните имя и корректный номер телефона'});
+                return;
+            }
+
+            let data = {
+                name: name,
+                phone: phone
+            };
+
+            tg.sendData(JSON.stringify(data));
+            setTimeout(() => tg.close(), 100);
         }
     </script>
 </body>
